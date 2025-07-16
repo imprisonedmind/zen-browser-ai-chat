@@ -89,9 +89,9 @@
     padding: 12px 16px;
     border-radius: var(--radius);
     position: relative;
-    word-wrap: break-word; /* This is the old property, will be superseded by markdown.css */
+    /* word-wrap: break-word; // This is fine, but markdown.css has more specific rules */
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6; /* Slightly increased for more breathing room */
     box-shadow: var(--shadow-sm);
 }
 
