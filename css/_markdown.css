@@ -1,0 +1,137 @@
+/* _markdown.css */
+
+/* --- Markdown Rendering Enhancements --- */
+
+.message-bubble p {
+    margin-bottom: 0.8em; /* Space between paragraphs */
+}
+
+.message-bubble p:last-child {
+    margin-bottom: 0; /* No extra margin after the last paragraph in a bubble */
+}
+
+.message-bubble ul,
+.message-bubble ol {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    padding-left: 20px; /* Indent lists */
+}
+
+.message-bubble ul li,
+.message-bubble ol li {
+    margin-bottom: 0.4em; /* Space between list items */
+    line-height: 1.5; /* Improve readability of list text */
+}
+
+/* For nested lists, reduce the margin slightly if needed */
+.message-bubble ul ul,
+.message-bubble ol ol {
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
+}
+
+/* Inline code styling */
+.message-bubble code:not(pre code) {
+    font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 0.9em; /* Slightly smaller for inline code */
+    color: var(--text-primary);
+    white-space: pre-wrap; /* Allow inline code to wrap */
+}
+
+
+/* Code block styling (from highlight.js integration) */
+.message-bubble pre {
+    background-color: #2d2d2d; /* Highlight.js default dark background */
+    color: #cccccc; /* Highlight.js default text color */
+    padding: 1em;
+    border-radius: 8px;
+    overflow-x: auto; /* Enable horizontal scrolling for long lines */
+    font-size: 13px; /* Slightly smaller font for code */
+    line-height: 1.4;
+    margin-top: 1em; /* Space above code block */
+    margin-bottom: 1em; /* Space below code block */
+    white-space: pre-wrap; /* Allows long lines to wrap */
+    word-break: break-all; /* Ensures really long words break */
+    font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+}
+
+.message-bubble pre code {
+    display: block; /* Ensure code block takes full width of pre */
+}
+
+/* Headings */
+.message-bubble h1,
+.message-bubble h2,
+.message-bubble h3,
+.message-bubble h4,
+.message-bubble h5,
+.message-bubble h6 {
+    margin-top: 1em;
+    margin-bottom: 0.8em;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-primary);
+}
+
+.message-bubble h1 { font-size: 1.8em; }
+.message-bubble h2 { font-size: 1.5em; }
+.message-bubble h3 { font-size: 1.3em; }
+.message-bubble h4 { font-size: 1.1em; }
+
+/* Links */
+.message-bubble a {
+    color: var(--accent-primary);
+    text-decoration: underline;
+}
+
+.message-bubble a:hover {
+    color: var(--accent-secondary);
+}
+
+/* Blockquotes */
+.message-bubble blockquote {
+    border-left: 4px solid var(--border-color);
+    padding-left: 1em;
+    margin: 1em 0;
+    color: var(--text-secondary);
+}
+
+/* Tables (if Gemini sends them) */
+.message-bubble table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+}
+
+.message-bubble th,
+.message-bubble td {
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    text-align: left;
+}
+
+.message-bubble th {
+    background-color: var(--bg-tertiary);
+    font-weight: 600;
+}
+
+/* Ensure responsiveness for images if Gemini sends them */
+.message-bubble img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+    margin: 1em 0;
+}
+
+/* Override dark mode for code block background if desired, or let highlight.js theme handle it */
+@media (prefers-color-scheme: dark) {
+    .message-bubble pre {
+        background-color: #1e1e1e; /* A slightly different dark background for code blocks in dark mode */
+    }
+    .message-bubble code:not(pre code) {
+        background-color: var(--bg-tertiary); /* Inline code background in dark mode */
+    }
+}

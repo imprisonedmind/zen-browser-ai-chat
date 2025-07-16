@@ -1,13 +1,27 @@
 // Vanilla JavaScript - Zen Browser Style
-var md = window.markdownit({linkify: true, breaks: true})
-var DOMPurify = window.DOMPurify
+var md = window.markdownit({
+  html: true,
+  linkify: true,
+  breaks: true,
+  highlight: function (str, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return '<pre><code class="hljs">' +
+          hljs.highlight(str, {language: lang, ignoreIllegals: true}).value +
+          '</code></pre>';
+      } catch (__) {
+      }
+    }
 
+    return '<pre><code class="hljs">' + md.utils.escapeHtml(str) + '</code></pre>';
+  }
+});
+var DOMPurify = window.DOMPurify
 var isLoading = false
 var messageCount = 0
-var currentModel = "openai:gpt-4o"
-
-// Declare browser variable
+var currentModel = "openai:gpt-4o" // Declare browser variable
 var browser = window.browser || window.chrome
+
 
 // API Configuration for different companies
 var API_CONFIGS = {
@@ -16,6 +30,15 @@ var API_CONFIGS = {
     buildPayload: (model, prompt, ctx) => ({
       model: model,
       messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant. Respond concisely and clearly. Format your responses using GitHub Flavored Markdown (GFM). Ensure: \n" +
+            "- Code blocks use proper triple backticks (```) with language identifiers (e.g., ```javascript). \n" +
+            "- Bullet lists use hyphens (-) and are properly indented for nesting (2 spaces per level). \n" +
+            "- Numbered lists are ordered (1., 2., etc.). \n" +
+            "- Use bold (**text**), italics (*text*), and headings (#, ##, ###) when appropriate. \n" +
+            "- Always include a blank line before and after code blocks, and before and after lists, to ensure proper rendering."
+        },
         {
           role: "user",
           content: prompt + "\n\n---- PAGE CONTEXT ----\n" + JSON.stringify(ctx, null, 2) + "\n---- END ----",

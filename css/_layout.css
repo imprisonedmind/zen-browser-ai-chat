@@ -1,0 +1,34 @@
+/* _layout.css */
+
+/* Messages Container - FULL HEIGHT, NO HEADER */
+#messages-container {
+    height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+#messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+#messages::-webkit-scrollbar {
+    width: 4px;
+}
+#messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+#messages::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 2px;
+}
+#messages::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
