@@ -31,16 +31,6 @@ This project is a browser extension. To install it in your browser (e.g., Chrome
 
 2.  **Unpack the Extension:**
 
-    * **Chrome:**
-
-        1.  Open Chrome.
-
-        2.  Go to `chrome://extensions`.
-
-        3.  Enable "Developer mode" (usually a toggle in the top right).
-
-        4.  Click "Load unpacked" and select the project folder.
-
     * **Firefox:**
 
         1.  Open Firefox.
@@ -77,7 +67,7 @@ The extension should now appear in your browser's extensions list.
 
     * You can ask questions about the current web page, or any general topic.
 
-5.  **Persistent History:** Your chat history will automatically be saved and loaded when you reopen the sidebar.
+5.  ~~**Persistent History:** Your chat history will automatically be saved and loaded when you reopen the sidebar.~~
 
 ## Technical Details
 
