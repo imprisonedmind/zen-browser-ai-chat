@@ -5,6 +5,10 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-user-select: text; /* For Safari/Chrome */
+    -moz-user-select: text;    /* For Firefox */
+    -ms-user-select: text;     /* For Edge/IE */
+    user-select: text;         /* Standard property */
 }
 
 html, body {

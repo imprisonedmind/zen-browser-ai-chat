@@ -3,18 +3,18 @@
 /* --- Markdown Rendering Enhancements --- */
 
 .message-bubble p {
-    margin-bottom: 0.8em; /* Space between paragraphs */
+    margin-bottom: 1em; /* Increased slightly for more separation */
+    line-height: 1.6; /* Consistent with bubble line-height */
 }
 
 .message-bubble p:last-child {
     margin-bottom: 0; /* No extra margin after the last paragraph in a bubble */
 }
 
-.message-bubble ul,
-.message-bubble ol {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-    padding-left: 20px; /* Indent lists */
+.message-bubble ul li,
+.message-bubble ol li {
+    margin-bottom: 0.6em; /* Slightly more space between list items */
+    line-height: 1.6; /* Consistent with paragraph/bubble line-height */
 }
 
 .message-bubble ul li,
@@ -76,10 +76,21 @@
     color: var(--text-primary);
 }
 
-.message-bubble h1 { font-size: 1.8em; }
-.message-bubble h2 { font-size: 1.5em; }
-.message-bubble h3 { font-size: 1.3em; }
-.message-bubble h4 { font-size: 1.1em; }
+.message-bubble h1 {
+    font-size: 1.8em;
+}
+
+.message-bubble h2 {
+    font-size: 1.5em;
+}
+
+.message-bubble h3 {
+    font-size: 1.3em;
+}
+
+.message-bubble h4 {
+    font-size: 1.1em;
+}
 
 /* Links */
 .message-bubble a {
@@ -131,6 +142,7 @@
     .message-bubble pre {
         background-color: #1e1e1e; /* A slightly different dark background for code blocks in dark mode */
     }
+
     .message-bubble code:not(pre code) {
         background-color: var(--bg-tertiary); /* Inline code background in dark mode */
     }
