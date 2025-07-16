@@ -1,3 +1,8 @@
+<img width="4608" height="2592" alt="image" src="https://github.com/user-attachments/assets/07bf1c03-990c-44da-8655-ecd81cad9a05" />
+
+
+
+
 # Zen LLM Chat Sidebar
 
 This is a browser extension that provides a convenient chat sidebar, allowing you to interact with various Large Language Models (LLMs) directly within your browser. It's designed for quick queries, page summarization, and general AI assistance, all while keeping your chat history persistent.
@@ -91,5 +96,4 @@ The extension is built using:
 * **Browser Storage API (`browser.storage.local`):** For persisting settings and chat history.
 
 ## License
-
-(You can add your preferred license information here, e.g., MIT, Apache 2.0, etc.)
+Apache 2.0
