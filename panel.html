@@ -1,114 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8"/>
     <title>Zen Chat</title>
-
-    <style>
-        html, body {
-            margin: 0; padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ubuntu, Helvetica, Arial, sans-serif;
-            font-size: 14px; color: var(--text-color,#000); background: var(--bg,#fff);
-            height: 100%; display: flex; flex-direction: column;
-        }
-
-        /* container for messages */
-        #messages {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            padding: 8px;
-        }
-
-        /* each bubble */
-        .message {
-            position: relative;
-            max-width: 75%;
-            margin: 4px 0;
-            padding: 8px 12px;
-            white-space: pre-wrap;
-            user-select: text;
-            -webkit-user-select: text;
-        }
-
-        /* user bubble (right) */
-        .message.user {
-            align-self: flex-end;
-            background: #DCF8C6;
-            border-radius: 12px 12px 0 12px;
-        }
-
-        /* bot bubble (left) */
-        .message.bot {
-            align-self: flex-start;
-            background: #F1F0F0;
-            border-radius: 12px 12px 12px 0;
-        }
-
-        /* copy button in bubble */
-        .copy-btn {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            font-size: 12px;
-            color: #555;
-        }
-        .copy-btn:hover {
-            color: #000;
-        }
-
-        /* input row */
-        #input-area {
-            display: flex;
-            border-top: 1px solid #ddd;
-        }
-        #prompt {
-            flex: 1;
-            padding: 6px;
-            border: none;
-        }
-        #send, #settings {
-            padding: 6px 12px;
-            border: none;
-            background: none;
-            cursor: pointer;
-        }
-
-        /* modal */
-        .hidden { display: none; }
-        label { display: block; font-size: 12px; margin-top: 4px; }
-    </style>
+    <!-- load your CSS -->
+    <link rel="stylesheet" href="panel.css">
 </head>
 <body>
-
+<!-- ─── Chat messages ──────────────────────────────────────────────────── -->
 <div id="messages"></div>
 
+<!-- ─── Input row ──────────────────────────────────────────────────────── -->
 <div id="input-area">
-    <button id="settings" title="Settings">⚙️</button>
-    <input id="prompt" placeholder="Ask anything…" />
-    <button id="send">⏎</button>
+    <button id="settings">⚙️</button>
+    <input id="prompt" placeholder="Ask a question…" autocomplete="off"/>
+    <button id="send">Send</button>
 </div>
 
-<div id="settings-modal" class="hidden"
-     style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);">
-    <div style="background:var(--bg,#fff);padding:12px;margin:40px auto;max-width:360px;">
+<!-- ─── Settings modal (same markup) ────────────────────────────────────── -->
+<div id="settings-modal" class="hidden" style="position:absolute;top:0;left:0;
+       width:100%;height:100%;background:rgba(0,0,0,0.3);">
+    <div style="background:#fff;padding:12px;margin:40px auto;max-width:360px;
+                border-radius:8px;">
         <h3>Model settings</h3>
-        <label>Endpoint  <input id="endpoint" style="width:100%" placeholder="https://api.openai.com/v1/chat/completions"></label>
-        <label>Model     <input id="model"    style="width:100%" placeholder="gpt-4o"></label>
-        <label>API Key   <input id="apiKey"   style="width:100%" placeholder="sk-…"></label>
-        <br>
-        <button id="saveSettings">Save</button>
-        <button id="closeSettings">Close</button>
+        <label>Endpoint <input id="endpoint" style="width:100%"
+                               placeholder="https://api.openai.com/v1/chat/completions"></label>
+        <label>Model <input id="model" style="width:100%" placeholder="gpt-4o"></label>
+        <label>API Key <input id="apiKey" style="width:100%" placeholder="sk-…"></label>
+        <div style="margin-top:12px;text-align:right;">
+            <button id="saveSettings">Save</button>
+            <button id="closeSettings">Close</button>
+        </div>
     </div>
 </div>
 
-<!-- load locally (CSP-safe) -->
+<!-- ─── CSP-safe local libs ─────────────────────────────────────────────── -->
 <script src="markdown-it.min.js"></script>
 <script src="dompurify.min.js"></script>
+<!-- your panel.js with md.render() + copy-buttons etc. -->
 <script src="panel.js"></script>
 </body>
 </html>
