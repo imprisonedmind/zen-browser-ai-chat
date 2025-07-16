@@ -3,41 +3,165 @@
 <head>
     <meta charset="utf-8"/>
     <title>Zen Chat</title>
-    <!-- load your CSS -->
     <link rel="stylesheet" href="panel.css">
 </head>
 <body>
-<!-- ─── Chat messages ──────────────────────────────────────────────────── -->
-<div id="messages"></div>
-
-<!-- ─── Input row ──────────────────────────────────────────────────────── -->
-<div id="input-area">
-    <button id="settings">⚙️</button>
-    <input id="prompt" placeholder="Ask a question…" autocomplete="off"/>
-    <button id="send">Send</button>
-</div>
-
-<!-- ─── Settings modal (same markup) ────────────────────────────────────── -->
-<div id="settings-modal" class="hidden" style="position:absolute;top:0;left:0;
-       width:100%;height:100%;background:rgba(0,0,0,0.3);">
-    <div style="background:#fff;padding:12px;margin:40px auto;max-width:360px;
-                border-radius:8px;">
-        <h3>Model settings</h3>
-        <label>Endpoint <input id="endpoint" style="width:100%"
-                               placeholder="https://api.openai.com/v1/chat/completions"></label>
-        <label>Model <input id="model" style="width:100%" placeholder="gpt-4o"></label>
-        <label>API Key <input id="apiKey" style="width:100%" placeholder="sk-…"></label>
-        <div style="margin-top:12px;text-align:right;">
-            <button id="saveSettings">Save</button>
-            <button id="closeSettings">Close</button>
+<!-- Messages Container (NO TOP HEADER) -->
+<div id="messages-container">
+    <div id="messages"></div>
+    <div id="welcome-screen" class="welcome-screen">
+        <div class="welcome-icon">🤖</div>
+        <h3>Welcome to Zen AI Chat</h3>
+        <p>Ask me anything about the current page or any topic</p>
+        <div class="quick-actions">
+            <button class="quick-action" data-prompt="Summarize this page">Summarize this
+                page
+            </button>
+            <button class="quick-action" data-prompt="Explain the main concepts">Explain
+                the main concepts
+            </button>
+            <button class="quick-action" data-prompt="What are the key points?">What are
+                the key points?
+            </button>
         </div>
     </div>
 </div>
 
-<!-- ─── CSP-safe local libs ─────────────────────────────────────────────── -->
+<!-- Bottom Input Bar - Zen Style -->
+<div id="input-area">
+    <div class="left-icons">
+<!--        <button id="add-btn" class="icon-btn" title="New Chat">-->
+<!--            <span>+</span>-->
+<!--        </button>-->
+<!--        <button id="web-btn" class="icon-btn" title="Web Search">-->
+<!--            <span>🌐</span>-->
+<!--        </button>-->
+        <button id="settings" class="icon-btn" title="Settings">
+            <span>⚙️</span>
+        </button>
+<!--        <button id="expand-btn" class="icon-btn" title="Expand">-->
+<!--            <span>⤢</span>-->
+<!--        </button>-->
+
+        <!-- Model Selector Button -->
+        <div class="model-selector-container">
+            <button id="model-btn" class="model-btn" title="Select Model">
+                <span id="current-model">GPT-4o</span>
+            </button>
+
+            <!-- Model Dropdown -->
+            <div id="model-dropdown" class="model-dropdown hidden">
+                <div class="model-option" data-value="openai:gpt-4o" data-name="GPT-4o">
+                    <div class="model-name">GPT-4o</div>
+                    <div class="model-desc">Great for most tasks</div>
+                </div>
+                <div class="model-option" data-value="openai:gpt-4o-mini"
+                     data-name="GPT-4o Mini">
+                    <div class="model-name">GPT-4o Mini</div>
+                    <div class="model-desc">Faster and more efficient</div>
+                </div>
+                <div class="model-option" data-value="openai:gpt-3.5-turbo"
+                     data-name="GPT-3.5">
+                    <div class="model-name">GPT-3.5</div>
+                    <div class="model-desc">Quick responses</div>
+                </div>
+                <div class="model-separator"></div>
+                <div class="model-option"
+                     data-value="anthropic:claude-3-5-sonnet-20241022"
+                     data-name="Claude 3.5">
+                    <div class="model-name">Claude 3.5 Sonnet</div>
+                    <div class="model-desc">Advanced reasoning</div>
+                </div>
+                <div class="model-option" data-value="anthropic:claude-3-haiku-20240307"
+                     data-name="Claude 3 Haiku">
+                    <div class="model-name">Claude 3 Haiku</div>
+                    <div class="model-desc">Fast and efficient</div>
+                </div>
+                <div class="model-separator"></div>
+                <div class="model-option" data-value="google:gemini-2.5-pro"
+                     data-name="Gemini Pro">
+                    <div class="model-name">Gemini 2.5 Pro</div>
+                    <div class="model-desc">Google's advanced model</div>
+                </div>
+                <div class="model-option" data-value="google:gemini-2.5-flash"
+                     data-name="Gemini Flash">
+                    <div class="model-name">Gemini 2.5 Flash</div>
+                    <div class="model-desc">Fast responses</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-wrapper">
+        <input id="prompt" placeholder="Ask anything" autocomplete="off"/>
+    </div>
+
+    <div class="right-icons">
+<!--        <button id="mic-btn" class="icon-btn" title="Voice Input">-->
+<!--            <span>🎤</span>-->
+<!--        </button>-->
+        <button id="send" class="icon-btn send-btn" title="Send">
+            <span id="send-icon">➤</span>
+            <span id="loading-icon" class="loading hidden">⟳</span>
+        </button>
+    </div>
+</div>
+
+<!-- Company-Based Settings Modal -->
+<div id="settings-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>API Keys</h3>
+            <button id="closeSettings" class="close-btn">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="api-section">
+                <div class="api-header">
+                    <div class="api-logo openai-logo">🤖</div>
+                    <div class="api-info">
+                        <h4>OpenAI</h4>
+                        <p>GPT-4o, GPT-4o Mini, GPT-3.5 Turbo</p>
+                    </div>
+                </div>
+                <input id="openai-key" type="password" placeholder="sk-..."
+                       class="api-key-input">
+            </div>
+
+            <div class="api-section">
+                <div class="api-header">
+                    <div class="api-logo anthropic-logo">🧠</div>
+                    <div class="api-info">
+                        <h4>Anthropic</h4>
+                        <p>Claude 3.5 Sonnet, Claude 3 Haiku</p>
+                    </div>
+                </div>
+                <input id="anthropic-key" type="password" placeholder="sk-ant-..."
+                       class="api-key-input">
+            </div>
+
+            <div class="api-section">
+                <div class="api-header">
+                    <div class="api-logo google-logo">🔍</div>
+                    <div class="api-info">
+                        <h4>Google AI</h4>
+                        <p>Gemini 2.5 Pro, Gemini 2.5 Flash</p>
+                    </div>
+                </div>
+                <input id="google-key" type="password" placeholder="AI..."
+                       class="api-key-input">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="cancelSettings" class="btn btn-secondary">Cancel</button>
+            <button id="saveSettings" class="btn btn-primary">Save Keys</button>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
 <script src="markdown-it.min.js"></script>
 <script src="dompurify.min.js"></script>
-<!-- your panel.js with md.render() + copy-buttons etc. -->
 <script src="panel.js"></script>
 </body>
 </html>

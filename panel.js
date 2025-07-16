@@ -1,135 +1,403 @@
-// ─── markdown + storage ─────────────────────────────────────────────────────────
-const md    = window.markdownit({ linkify: true, breaks: true });
-const store = browser.storage.local;   // or .sync if you have a fixed add-on ID
+// Vanilla JavaScript - Zen Browser Style
+var md = window.markdownit({linkify: true, breaks: true})
+var DOMPurify = window.DOMPurify
 
-// ─── settings UI ───────────────────────────────────────────────────────────────
-async function loadSettings() {
-  const s = await store.get(["endpoint","model","apiKey"]);
-  if (s.endpoint) document.getElementById("endpoint").value = s.endpoint;
-  if (s.model)    document.getElementById("model").value    = s.model;
-  if (s.apiKey)   document.getElementById("apiKey").value   = s.apiKey;
+var isLoading = false
+var messageCount = 0
+var currentModel = "openai:gpt-4o"
+
+// Declare browser variable
+var browser = window.browser || window.chrome
+
+// API Configuration for different companies
+var API_CONFIGS = {
+  openai: {
+    endpoint: "https://api.openai.com/v1/chat/completions",
+    buildPayload: (model, prompt, ctx) => ({
+      model: model,
+      messages: [
+        {
+          role: "user",
+          content: prompt + "\n\n---- PAGE CONTEXT ----\n" + JSON.stringify(ctx, null, 2) + "\n---- END ----",
+        },
+      ],
+    }),
+    parseResponse: (data) =>
+      (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "No response",
+    getHeaders: (apiKey) => ({
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + apiKey,
+    }),
+  },
+  anthropic: {
+    endpoint: "https://api.anthropic.com/v1/messages",
+    buildPayload: (model, prompt, ctx) => ({
+      model: model,
+      max_tokens: 4000,
+      messages: [
+        {
+          role: "user",
+          content: prompt + "\n\n---- PAGE CONTEXT ----\n" + JSON.stringify(ctx, null, 2) + "\n---- END ----",
+        },
+      ],
+    }),
+    parseResponse: (data) => (data.content && data.content[0] && data.content[0].text) || "No response",
+    getHeaders: (apiKey) => ({
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    }),
+  },
+  google: {
+    buildPayload: (model, prompt, ctx) => ({
+      contents: [
+        {
+          parts: [
+            {
+              text: prompt + "\n\n---- PAGE CONTEXT ----\n" + JSON.stringify(ctx, null, 2) + "\n---- END ----",
+            },
+          ],
+        },
+      ],
+    }),
+    parseResponse: (data) => {
+      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+        var parts = data.candidates[0].content.parts
+        var result = ""
+        for (var i = 0; i < parts.length; i++) {
+          result += parts[i].text || ""
+        }
+        return result || "No response"
+      }
+      return "No response"
+    },
+    getHeaders: (apiKey) => ({
+      "Content-Type": "application/json",
+    }),
+    getEndpoint: (model, apiKey) =>
+      "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey,
+  },
 }
 
-async function saveSettings() {
-  const endpoint = document.getElementById("endpoint").value.trim();
-  const model    = document.getElementById("model").value.trim();
-  const apiKey   = document.getElementById("apiKey").value.trim();
-  await store.set({ endpoint, model, apiKey });
+var store = browser.storage.local
+
+// ─── Settings Management ─────────────────────────────────────────────────────
+function loadSettings() {
+  store.get(["openaiKey", "anthropicKey", "googleKey", "selectedModel"]).then((settings) => {
+    if (settings.openaiKey) document.getElementById("openai-key").value = settings.openaiKey
+    if (settings.anthropicKey) document.getElementById("anthropic-key").value = settings.anthropicKey
+    if (settings.googleKey) document.getElementById("google-key").value = settings.googleKey
+    if (settings.selectedModel) {
+      currentModel = settings.selectedModel
+      updateCurrentModelDisplay()
+    }
+  })
 }
 
-document.getElementById("settings").addEventListener("click", () => {
-  document.getElementById("settings-modal").classList.remove("hidden");
-  loadSettings();
-});
-document.getElementById("closeSettings").addEventListener("click", () => {
-  document.getElementById("settings-modal").classList.add("hidden");
-});
-document.getElementById("saveSettings").addEventListener("click", async () => {
-  await saveSettings();
-  document.getElementById("settings-modal").classList.add("hidden");
-});
+function saveSettings() {
+  var openaiKey = document.getElementById("openai-key").value.trim()
+  var anthropicKey = document.getElementById("anthropic-key").value.trim()
+  var googleKey = document.getElementById("google-key").value.trim()
 
-// ─── context grabber ───────────────────────────────────────────────────────────
-async function getPageContext() {
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  try {
-    return await browser.tabs.sendMessage(tab.id, { type: "GET_CONTEXT" });
-  } catch {
-    await browser.tabs.executeScript(tab.id, { file: "content.js" });
-    await new Promise(r => setTimeout(r, 50));
-    return browser.tabs.sendMessage(tab.id, { type: "GET_CONTEXT" });
+  return store.set({
+    openaiKey: openaiKey,
+    anthropicKey: anthropicKey,
+    googleKey: googleKey,
+    selectedModel: currentModel,
+  })
+}
+
+// ─── Model Selection ─────────────────────────────────────────────────────────
+function updateCurrentModelDisplay() {
+  var modelBtn = document.getElementById("current-model")
+  var modelOptions = document.querySelectorAll(".model-option")
+
+  // Remove previous selection
+  for (var i = 0; i < modelOptions.length; i++) {
+    modelOptions[i].classList.remove("selected")
+  }
+
+  // Find and select current model
+  for (var i = 0; i < modelOptions.length; i++) {
+    if (modelOptions[i].getAttribute("data-value") === currentModel) {
+      modelOptions[i].classList.add("selected")
+      modelBtn.textContent = modelOptions[i].getAttribute("data-name")
+      break
+    }
   }
 }
 
-// ─── send routine ───────────────────────────────────────────────────────────────
-async function sendPrompt() {
-  const promptInput = document.getElementById("prompt");
-  const prompt = promptInput.value.trim();
-  if (!prompt) return;
-  promptInput.value = "";
+function toggleModelDropdown() {
+  var dropdown = document.getElementById("model-dropdown")
+  dropdown.classList.toggle("hidden")
+}
 
-  appendMessage("user", prompt);
+function selectModel(value, name) {
+  currentModel = value
+  updateCurrentModelDisplay()
+  document.getElementById("model-dropdown").classList.add("hidden")
+  store.set({selectedModel: currentModel})
+}
 
-  const ctx = await getPageContext();
-  const { endpoint, model, apiKey } = await store.get(["endpoint","model","apiKey"]);
-  if (!endpoint || !model || !apiKey) {
-    appendMessage("bot", "⚠️ Configure endpoint, model, and API key.");
-    return;
+// ─── Context Management ──────────────────────────────────────────────────────
+function getPageContext() {
+  return browser.tabs.query({active: true, currentWindow: true}).then((tabs) => {
+    var tab = tabs[0]
+    return browser.tabs.sendMessage(tab.id, {type: "GET_CONTEXT"}).catch(() =>
+      browser.tabs.executeScript(tab.id, {file: "content.js"}).then(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(() => {
+              resolve(browser.tabs.sendMessage(tab.id, {type: "GET_CONTEXT"}))
+            }, 50)
+          }),
+      ),
+    )
+  })
+}
+
+// ─── Message Management ──────────────────────────────────────────────────────
+function hideWelcomeScreen() {
+  var welcomeScreen = document.getElementById("welcome-screen")
+  if (welcomeScreen) {
+    welcomeScreen.classList.add("hidden")
   }
+}
 
-  // build headers
-  const headers = { "Content-Type": "application/json" };
-  if (endpoint.includes("openai.com")) {
-    headers.Authorization = `Bearer ${apiKey}`;
-  } else if (endpoint.includes("googleapis.com")) {
-    headers["X-Goog-Api-Key"] = apiKey;
+function appendMessage(role, text, isLoadingMsg) {
+  hideWelcomeScreen()
+
+  var messageId = "msg-" + Date.now() + "-" + messageCount++
+  var time = new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})
+
+  var messageDiv = document.createElement("div")
+  messageDiv.className = "message " + role
+  messageDiv.id = messageId
+
+  var content = document.createElement("div")
+  content.className = "message-content"
+
+  var bubble = document.createElement("div")
+  bubble.className = "message-bubble"
+
+  if (isLoadingMsg) {
+    bubble.innerHTML =
+      '<div class="loading-message"><span>Thinking</span><div class="loading-dots"><span></span><span></span><span></span></div></div>'
   } else {
-    headers.Authorization = apiKey;
+    var html = DOMPurify.sanitize(md.render(text))
+    bubble.innerHTML = html
+
+    if (role === "bot") {
+      var copyBtn = document.createElement("button")
+      copyBtn.className = "copy-btn"
+      copyBtn.innerHTML = "📋"
+      copyBtn.title = "Copy response"
+      copyBtn.onclick = () => {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text)
+        }
+      }
+      bubble.appendChild(copyBtn)
+    }
   }
 
-  const payload = buildPayload(endpoint, model, prompt, ctx);
+  var timeSpan = document.createElement("span")
+  timeSpan.className = "message-time"
+  timeSpan.textContent = time
 
-  try {
-    const resp  = await fetch(endpoint, { method: "POST", headers, body: JSON.stringify(payload) });
-    const data  = await resp.json();
-    const reply = parseAssistant(data);
-    appendMessage("bot", reply);
-  } catch (e) {
-    appendMessage("bot", "Error: " + e.message);
+  content.appendChild(bubble)
+  content.appendChild(timeSpan)
+  messageDiv.appendChild(content)
+
+  document.getElementById("messages").appendChild(messageDiv)
+  messageDiv.scrollIntoView({behavior: "smooth"})
+
+  return messageId
+}
+
+function updateMessage(messageId, text) {
+  var messageDiv = document.getElementById(messageId)
+  if (messageDiv) {
+    var bubble = messageDiv.querySelector(".message-bubble")
+    if (bubble) {
+      var html = DOMPurify.sanitize(md.render(text))
+      bubble.innerHTML = html
+
+      var copyBtn = document.createElement("button")
+      copyBtn.className = "copy-btn"
+      copyBtn.innerHTML = "📋"
+      copyBtn.title = "Copy response"
+      copyBtn.onclick = () => {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text)
+        }
+      }
+      bubble.appendChild(copyBtn)
+    }
   }
 }
 
-// ─── payload / parsing ─────────────────────────────────────────────────────────
-function buildPayload(endpoint, model, prompt, ctx) {
-  const prettyCtx = JSON.stringify(ctx, null, 2);
-  const body = `${prompt}\n\n---- PAGE CONTEXT ----\n${prettyCtx}\n---- END ----`;
+// ─── Send Logic ──────────────────────────────────────────────────────────────
+function sendPrompt() {
+  var promptInput = document.getElementById("prompt")
+  var prompt = promptInput.value.trim()
+  if (!prompt || isLoading) return
 
-  if (endpoint.includes("openai.com")) {
-    return { model, messages: [{ role: "user", content: body }] };
-  } else if (endpoint.includes("googleapis.com")) {
-    return { contents: [{ parts:[{ text: body }] }] };
+  var parts = currentModel.split(":")
+  var company = parts[0]
+  var model = parts[1]
+
+  var keyName = company + "Key"
+
+  store.get([keyName]).then((settings) => {
+    var apiKey = settings[keyName]
+
+    if (!apiKey) {
+      appendMessage("bot", "⚠️ Configure " + company.toUpperCase() + " API key first.")
+      return
+    }
+
+    promptInput.value = ""
+    appendMessage("user", prompt)
+
+    setLoading(true)
+
+    var loadingMessageId = appendMessage("bot", "", true)
+
+    getPageContext()
+      .then((ctx) => {
+        var config = API_CONFIGS[company]
+        var endpoint = config.endpoint
+
+        if (company === "google") {
+          endpoint = config.getEndpoint(model, apiKey)
+        }
+
+        var payload = config.buildPayload(model, prompt, ctx)
+        var headers = config.getHeaders(apiKey)
+
+        fetch(endpoint, {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify(payload),
+        })
+          .then((resp) => {
+            if (!resp.ok) {
+              throw new Error("API Error: " + resp.status + " " + resp.statusText)
+            }
+            return resp.json()
+          })
+          .then((data) => {
+            var reply = config.parseResponse(data)
+            updateMessage(loadingMessageId, reply)
+          })
+          .catch((e) => {
+            updateMessage(loadingMessageId, "Error: " + e.message)
+          })
+          .finally(() => {
+            setLoading(false)
+          })
+      })
+      .catch((e) => {
+        updateMessage(loadingMessageId, "Error getting page context: " + e.message)
+        setLoading(false)
+      })
+  })
+}
+
+function setLoading(loading) {
+  isLoading = loading
+  var sendBtn = document.getElementById("send")
+  var sendIcon = document.getElementById("send-icon")
+  var loadingIcon = document.getElementById("loading-icon")
+
+  sendBtn.disabled = loading
+
+  if (loading) {
+    sendIcon.classList.add("hidden")
+    loadingIcon.classList.remove("hidden")
   } else {
-    return { model, prompt: body };
+    sendIcon.classList.remove("hidden")
+    loadingIcon.classList.add("hidden")
   }
 }
 
-function parseAssistant(d) {
-  if (d.choices && d.choices[0]?.message?.content)
-    return d.choices[0].message.content;
-  if (d.candidates && d.candidates[0]?.content?.parts)
-    return d.candidates[0].content.parts.map(p=>p.text).join("");
-  return JSON.stringify(d).slice(0,1000);
-}
+// ─── Event Listeners ─────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  // Send button
+  document.getElementById("send").addEventListener("click", sendPrompt)
 
-// ─── render & copy button ─────────────────────────────────────────────────────
-function appendMessage(role, text) {
-  const div = document.createElement("div");
-  div.className = `message ${role}`;
+  // Enter key in prompt
+  document.getElementById("prompt").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      sendPrompt()
+    }
+  })
 
-  // avatar + Markdown → safe HTML
-  const avatar = role === "user" ? "🧑‍💻" : "🤖";
-  const html   = DOMPurify.sanitize(md.render(text));
-  div.innerHTML = `${avatar} ${html}`;
+  // Model selection
+  document.getElementById("model-btn").addEventListener("click", toggleModelDropdown)
 
-  // add copy button for bot only
-  if (role === "bot") {
-    const btn = document.createElement("button");
-    btn.className = "copy-btn";
-    btn.title = "Copy response";
-    btn.innerText = "📋";
-    btn.onclick = () => navigator.clipboard.writeText(text);
-    div.appendChild(btn);
+  // Model options
+  var modelOptions = document.querySelectorAll(".model-option")
+  for (var i = 0; i < modelOptions.length; i++) {
+    modelOptions[i].addEventListener("click", (e) => {
+      var option = e.currentTarget
+      var value = option.getAttribute("data-value")
+      var name = option.getAttribute("data-name")
+      selectModel(value, name)
+    })
   }
 
-  document.getElementById("messages").appendChild(div);
-  div.scrollIntoView();
-}
+  // Close dropdown when clicking outside
+  document.addEventListener("click", (e) => {
+    var dropdown = document.getElementById("model-dropdown")
+    var modelBtn = document.getElementById("model-btn")
 
-// ─── wire up Enter & click ────────────────────────────────────────────────────
-document.getElementById("send").addEventListener("click", sendPrompt);
-document.getElementById("prompt").addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendPrompt();
+    if (!dropdown.contains(e.target) && !modelBtn.contains(e.target)) {
+      dropdown.classList.add("hidden")
+    }
+  })
+
+  // Settings modal
+  document.getElementById("settings").addEventListener("click", () => {
+    document.getElementById("settings-modal").classList.remove("hidden")
+    loadSettings()
+  })
+
+  document.getElementById("closeSettings").addEventListener("click", () => {
+    document.getElementById("settings-modal").classList.add("hidden")
+  })
+
+  document.getElementById("cancelSettings").addEventListener("click", () => {
+    document.getElementById("settings-modal").classList.add("hidden")
+  })
+
+  document.getElementById("saveSettings").addEventListener("click", () => {
+    saveSettings().then(() => {
+      document.getElementById("settings-modal").classList.add("hidden")
+    })
+  })
+
+  // Quick actions
+  var quickActions = document.querySelectorAll(".quick-action")
+  for (var i = 0; i < quickActions.length; i++) {
+    quickActions[i].addEventListener("click", (e) => {
+      var prompt = e.target.getAttribute("data-prompt")
+      if (prompt) {
+        document.getElementById("prompt").value = prompt
+        sendPrompt()
+      }
+    })
   }
-});
+
+  // Modal backdrop click
+  document.getElementById("settings-modal").addEventListener("click", (e) => {
+    if (e.target.id === "settings-modal" || e.target.classList.contains("modal-backdrop")) {
+      document.getElementById("settings-modal").classList.add("hidden")
+    }
+  })
+
+  // Initialize
+  loadSettings()
+})
