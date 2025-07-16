@@ -190,7 +190,6 @@ function appendMessage(role, text, isLoadingMsg) {
     if (role === "bot") {
       var copyBtn = document.createElement("button")
       copyBtn.className = "copy-btn"
-      copyBtn.innerHTML = "📋"
       copyBtn.title = "Copy response"
       copyBtn.onclick = () => {
         if (navigator.clipboard) {
@@ -225,7 +224,6 @@ function updateMessage(messageId, text) {
 
       var copyBtn = document.createElement("button")
       copyBtn.className = "copy-btn"
-      copyBtn.innerHTML = "📋"
       copyBtn.title = "Copy response"
       copyBtn.onclick = () => {
         if (navigator.clipboard) {
